@@ -1,6 +1,7 @@
 import numpy as np
 
-data = np.random.random((1, 3)) # Data shape is samples x features
+#data = np.random.random((1, 1)) # Data shape is samples x features
+data = np.array([[1]])
 labels = np.ones((1, 1))
 
 print(f"Data:\n{data}")
@@ -17,6 +18,8 @@ class Dense():
     def __init__(self, in_feats, out_feats):
         self.layer = np.random.random((in_feats, out_feats)) # So that dot product can happen - (samples x features) x (features x neurons in next layer) = (samples x neurons in next layer)
         self.bias = np.random.random((1, out_feats))
+        #self.layer = np.array([[1]])
+        #self.bias = np.array([[0]])
 
     def forward(self, X):
         return np.dot(X, self.layer) + self.bias
@@ -30,12 +33,12 @@ class Dense():
         print(f"dw:\n{dw}")
         db = premult * d_sigma
         print(f"db:\n{db}")
-        d_last = premult * (d_sigma * self.layer.T).T
+        d_last = premult * premult * (d_sigma * self.layer.T).T
         print(f"d_sigma * self.layer:\n{np.multiply(d_sigma, self.layer.T).T}")
         print(f"d_last:\n{d_last}")
         return dw, db, d_last
 
-d1 = Dense(3, 1)
+d1 = Dense(1, 2)
 pred = d1.forward(data)
 print(f"Pred:\n{pred}")
 print(f"Relu Pred:\n{relu(pred)}")
@@ -43,6 +46,17 @@ print(f"Relu Pred:\n{relu(pred)}")
 premult = 2 * (relu(pred) - labels)
 
 dw, db, dlast = d1.backward(premult, data)
+
+
+d2 = Dense(2, 1)
+print("-" * 10 + "Layer 2" + "-" * 10)
+
+premult = dlast
+pred2 = d2.forward(pred)
+print(f"Pred 2:\n{pred2}")
+print(f"Relu Pred:\n{relu(pred2)}")
+dw1, db1, dlast1 = d2.backward(premult, pred)
+
 #print(f"dW:\n{dw}\ndb:\n{db}\ndlast:\n{dlast}")
 '''
 class Model():
