@@ -24,3 +24,25 @@ The part that is still left is backward pass. Here is what I have been able to d
   $$\frac{dJ}{dW_3} = \frac{dJ}{da_3} \cdot \frac{da_3}{dW_3}$$
   $$\frac{dJ}{dW_3} = \frac{d}{da_3}(\frac{(a_3 - y)^2}{2m}) \cdot \frac{d}{dW_3}(\sigma(a_2 \cdot W_3 + b_3))$$ 
   $$\frac{dJ}{dW_3} = \frac{(a_3 - y)}{m} \cdot \sigma(a_2 \cdot W_3 + b_3) \cdot a_2$$
+  - This is where the problem appears. Consider the shape of each matrix.
+    $$(n_2, n_3) = (n_s, n_3) \cdot (n_s, n_3) \cdot (n_s, n_2)$$
+  - No amount of dot products and transposes will result in the shapes of LHS and RHS being equal. There are two ways this could be solved - 
+    1. By collapsing $\frac{dJ}{da_3}$ - We could collapse the entire $\frac{dJ}{da_3}$ matrix by taking its mean, thereby making its shape $(1, 1)$.
+    2. Element wise multiplication - We could also perform element-wise multiplication on $\frac{dJ}{da_3}$ and $\sigma(a_2 \cdot W_3 + b_3)$.
+  - While both of these method would result in the desired shape being produced, the seconf method appears to be more suitable, atleast for now.
+  - Using the second method -
+$$\frac{dJ}{da_3} = \frac{d}{da_3}(\frac{(a_3 - y)^2}{2m}) = \frac{a_3 - y}{m}$$
+$$\frac{da_3}{dW_3} = \frac{d}{dW_3}(\sigma(a_2 \cdot W_3 + b_3)) = \sigma'(a_2 \cdot W_3 + b_3) \cdot a_2$$
+$$\frac{da_3}{db_3} = \frac{d}{db_3}(\sigma(a_2 \cdot W_3 + b_3)) = \sigma'(a_2 \cdot W_3 + b_3)$$
+$$\frac{da_3}{da_2} = \frac{d}{da_2}(\sigma(a_2 \cdot W_3 + b_3)) = \sigma'(a_2 \cdot W_3 + b_3) \cdot W_3$$
+$$\frac{dJ}{dW_3} = \frac{dJ}{da_3} \circ \frac{da_3}{dW_3}$$
+$$\frac{dJ}{db_3} = \frac{dJ}{da_3} \circ \frac{da_3}{db_3}$$
+$$\frac{dJ}{da_2} = \frac{dJ}{da_3} \circ \frac{da_3}{da_2}$$
+Finally,
+$$\frac{dJ}{dW_3} = a_2^T \cdot (\frac{a_3 - y}{m} \circ \sigma'(a_2 \cdot W_3 + b_3))$$
+$$\frac{dJ}{db_3} = \frac{a_3 - y}{m} \circ \sigma'(a_2 \cdot W_3 + b_3)$$
+$$\frac{dJ}{da_2} = (\frac{a_3 - y}{m} \circ \sigma'(a_2 \cdot W_3 + b_3)) \cdot W_3^T$$
+Generalising it,
+$$\frac{dJ}{da_{i}} = (\frac{dJ}{da_{i+1}} \circ \sigma(a_i \cdot W_{i+1} + b_{i+1}) \cdot W_{i+1}^T$$
+$$\frac{dJ}{dW_i} = a_{i-1}^T \cdot (\frac{dJ}{da_i} \circ \sigma'(a_{i-1} \cdot W_i + b_i))$$
+$$\frac{dJ}{db_i} = \frac{dJ}{da_i} \circ \sigma'(a_{i-1} \cdot W_i + b_i)$$
