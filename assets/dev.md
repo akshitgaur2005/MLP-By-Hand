@@ -9,7 +9,7 @@ The forward pass has been completed and was really simple, nothing major to note
 The part that is still left is backward pass. Here is what I have been able to do till now - 
 
 - Let us have a neural network with 3 layers (excluding the input layer), $L_1$, $L_2$, $L_3$.
-![Base Neural Net](./nn.svg "Neural Network")
+!(./nn.svg "Neural Network")
 - For input data, X, let - 
   - $n_s$ = number of examples
   - $n_f$ = number of features
