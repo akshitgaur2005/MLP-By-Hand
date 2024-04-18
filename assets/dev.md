@@ -22,3 +22,5 @@ The part that is still left is backward pass. Here is what I have been able to d
 - The forward pass is simple enough. For the backward pass, after a lot of thinking, I have though of a method although it is not working yet.
   - For example, to calculate $\frac{dJ}{dW_3}$, what we can do is first calculate $\frac{dJ}{da_3}$, then calculate $\frac{da_3}{dW_3}$. After that we can use chain rule.
   $$\frac{dJ}{dW_3} = \frac{dJ}{da_3} \cdot \frac{da_3}{dW_3}$$
+  $$\frac{dJ}{dW_3} = \frac{d}{da_3}(\frac{(a_3 - y)^2}{2m}) \cdot \frac{d}{dW_3}(\sigma(a_2 \cdot W_3 + b_3))$$ 
+  $$\frac{dJ}{dW_3} = \frac{(a_3 - y)}{m} \cdot \sigma\rq(a_2 \cdot W_3 + b_3) \cdot a_2$$ 
