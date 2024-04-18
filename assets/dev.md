@@ -24,9 +24,3 @@ The part that is still left is backward pass. Here is what I have been able to d
   $$\frac{dJ}{dW_3} = \frac{dJ}{da_3} \cdot \frac{da_3}{dW_3}$$
   $$\frac{dJ}{dW_3} = \frac{d}{da_3}(\frac{(a_3 - y)^2}{2m}) \cdot \frac{d}{dW_3}(\sigma(a_2 \cdot W_3 + b_3))$$ 
   $$\frac{dJ}{dW_3} = \frac{(a_3 - y)}{m} \cdot \sigma(a_2 \cdot W_3 + b_3) \cdot a_2$$
-  - This is where the problem appears. Consider the shape of each matrix.
-    $$(n_2, n_3) = (n_s, n_3) \cdot (n_s, n_3) \cdot (n_s, n_2)$$
-  - No amount of dot products and transposes will result in the shapes of LHS and RHS being equal. There are two ways this could be solved - 
-    1. By collapsing $\frac{dJ}{da_3}$ - We could collapse the entire $\frac{dJ}{da_3}$ matrix by taking its mean, thereby making its shape $(1, 1)$.
-    2. Element wise multiplication - We could also perform element-wise multiplication on $\frac{dJ}{da_3}$ and $\sigma(a_2 \cdot W_3 + b_3)$.
-  - Both of these method would result in the desired shape being produced.
