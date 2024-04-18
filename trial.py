@@ -1,8 +1,12 @@
 import numpy as np
 
 #data = np.random.random((1, 1)) # Data shape is samples x features
-data = np.ones((2, 3))
-labels = np.ones((2, 1))
+#data = np.ones((2, 3))
+#labels = np.ones((2, 1))
+data = np.array([[1, 0, 1],
+                 [0, 1, 1]])
+labels = np.array([[1],
+                   [0]])
 
 print(f"Data:\n{data}")
 print(f"Labels:\n{labels}")
@@ -12,6 +16,9 @@ def relu(x):
 
 def relu_back(x):
     return 1 * (x > 0)
+
+def cost(preds, y):
+    return np.mean(np.square(preds - y))
 
 class Dense():
 
@@ -24,42 +31,11 @@ class Dense():
     def forward(self, X):
         return np.dot(X, self.weights) + self.bias
 
-    def backward(self, premult, input):
-        #print(f"premult:\n{premult}")
-        d_sigma = relu_back(self.forward(input))
-        print(f"d_sigma: {d_sigma.shape}, input: {input.shape}, weights: {self.weights.shape}")
-        #print(f"d_sigma:\n{d_sigma}")
-        dw = premult * np.multiply(input, d_sigma.T)
-        #print(f"d_sigma * input:\n{np.multiply(d_sigma, input)}")
-        #print(f"dw:\n{dw}")
-        db = premult * d_sigma
-        #print(f"db:\n{db}")
-        d_last = premult * premult * (d_sigma * self.weights)
-        #print(f"d_sigma * self.layer:\n{np.multiply(d_sigma, self.weights.T).T}")
-        #print(f"d_last:\n{d_last}")
-        return dw, db, d_last
-'''
-d1 = Dense(1, 2)
-pred = d1.forward(data)
-print(f"Pred:\n{pred}")
-print(f"Relu Pred:\n{relu(pred)}")
-
-premult = 2 * (relu(pred) - labels)
-
-dw, db, dlast = d1.backward(premult, data)
-
-
-d2 = Dense(2, 1)
-print("-" * 10 + "Layer 2" + "-" * 10)
-
-premult = dlast
-pred2 = d2.forward(pred)
-print(f"Pred 2:\n{pred2}")
-print(f"Relu Pred:\n{relu(pred2)}")
-dw1, db1, dlast1 = d2.backward(premult, pred)
-
-#print(f"dW:\n{dw}\ndb:\n{db}\ndlast:\n{dlast}")
-'''
+    def backward(self, da_i, a_i_1):
+        dw_i = np.dot(a_i_1.T, np.multiply(da_i, relu_back(self.forward(a_i_1))))
+        db_i = np.multiply(da_i, relu_back(self.forward(a_i_1)))
+        da_i_1 = np.dot(np.multiply(da_i, relu(self.forward(a_i_1))), self.weights.T)
+        return dw_i, db_i, da_i_1
 
 class Model():
 
@@ -68,27 +44,74 @@ class Model():
         for i in range(len(neurons) - 1):
             self.layers.append(Dense(neurons[i], neurons[i+1]))
 
-    def forward(self, X):
+    def forward(self, X, opt=False):
         input = X
-        print("-" * 10 + "Forward" + "-" * 10)
+        #print("-" * 10 + "Forward" + "-" * 10)
+        if opt:
+            outputs = []
         for i in range(len(self.layers) - 1):
-            print(f"i: {i}, input:\n{input}")
+            #print(f"i: {i}, input:\n{input}")
             input = relu(self.layers[i].forward(input))
+            if opt:
+                outputs.append(input)
+        if opt:
+            return outputs
         return self.layers[-1].forward(input)
 
     def optimise(self, X, y, lr):
-        preds = self.forward(X)
-        premult = 2 * np.mean(relu(preds) - y) # Premult is for chain rule, basically dJ/da_L-1
+        preds = self.forward(X, opt=True)
+        a_L = preds[-1]
+        da_i_1 = np.mean(a_L - y)
+        inputs = preds
 
         for i in range(len(self.layers)):
-            layer = self.layers[len(self.layers) - 1 - i]
-            dw, db, premult = layer.backward(premult, X)
-            layer.weights -= lr * dw
-            layer.bias -= lr * db
-
+            j = len(self.layers) - 1 - i
+            if j > 0:
+                a_i_1 = inputs[j - 1]
+            else:
+                a_i_1 = X
+            da_i = da_i_1
+            dw_i, db_i, da_i_1 = self.layers[j].backward(da_i, a_i_1)
+            #print(f"dw_i: {dw_i}, db_i: {db_i}, da_i_1: {da_i_1}")
+            self.layers[j].weights -= lr * dw_i
+            #print(f"Initial db_i:\n{db_i}")
+            db_i = db_i.mean(axis=0)
+            #print(f"db_i after taking mean:\n{db_i}")
+            #print(f"Bias: {self.layers[j].bias.shape}, db_i: {db_i}")
+            self.layers[j].bias -= lr * db_i
         
 
-model = Model([3, 4, 1])
+model = Model([3, 3, 2, 1])
 
-print(f"Class Pred:\n{model.forward(data)}")
-model.optimise(data, labels, 0.1)
+preds = model.forward(data)
+loss = cost(preds, labels)
+
+print(f"Cost_1: {loss}")
+
+for i in range(10):
+    model.optimise(data, labels, 0.1)
+
+preds = model.forward(data)
+loss = cost(preds, labels)
+print(f"Loss: {loss}")
+
+def working(n_iters=10):
+    wins = []
+    for i in range(n_iters):
+        model = Model([3, 3, 2, 1])
+        loss1 = cost(model.forward(data), labels)
+        for j in range(500):
+            model.optimise(data, labels, 0.01)
+        loss2 = cost(model.forward(data), labels)
+        if loss1 > loss2:
+            wins.append(1)
+        else:
+            wins.append(0)
+
+    wins = np.array(wins)
+
+    print(wins)
+    percentage_win = wins.mean() * 100
+    print(f"Working percentage: {percentage_win}%")
+
+working(1000)
