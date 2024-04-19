@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 def relu(x):
     """
@@ -16,6 +17,9 @@ def drelu(x):
     """
     return 1 * (x > 0)
 
+def clip(x, i):
+    return np.clip(x, -i, i)
+
 def mse(y_hat, y):
     """
     Mean Squared Error (divided by 2 as it makes its derivative cleaner)
@@ -30,8 +34,8 @@ class Dense():
             Each output from previous layer is passed onto each neuron in the
             layer as input.
         """
-        self.weights = np.random.randn(in_feats, out_feats)
-        self.bias  = np.random.randn(1, out_feats)
+        self.weights = np.random.random((in_feats, out_feats))
+        self.bias  = np.random.random((1, out_feats))
 
     def forward(self, X):
         """
@@ -92,7 +96,7 @@ class Model():
             return outputs
         return preds
 
-    def optimise(self, X, y, lr):
+    def optimise(self, X, y, lr, counter):
         """
         Performs a single step of optimisation
         """
@@ -109,10 +113,18 @@ class Model():
             da_i = da_i_1
             dw_i, db_i, da_i_1 = self.layers[j].backward(da_i, a_i_1)
             db_i = np.mean(db_i, axis=0)
-            self.layers[j].weights -= lr * dw_i
+            clip_val = 1e4
+            dw_i = clip(dw_i, clip_val)
+            db_i = clip(db_i, clip_val)
+            if (counter % 100 == 0):
+                print(f"lr: {lr}, dw_{j}: {np.mean(dw_i)}, lr * dw_{j}: {lr * np.mean(dw_i)}, W: {np.mean(self.layers[j].weights)}, b: {np.mean(self.layers[j].bias)}")
+            ld = 0.01
+            self.layers[j].weights -= lr * (dw_i + ld * self.layers[j].weights)
             self.layers[j].bias -= lr * db_i
 
-    def fit(self, X, y, epochs, lr):
+        return a_L
+
+    def fit(self, X, y, epochs, lr, lr_decay, lr_min):
         """
         Fits the model to a dataset
         inputs are
@@ -123,9 +135,17 @@ class Model():
         """
         loss = []
         #track_var = np.round(epochs / 10)
-        track_var = 1
+        #X = np.array_split(X, 10)
+        #y = np.array_split(y, 10)
         for i in range(epochs):
-            self.optimise(X, y, lr)
-            if (i % track_var == 0):
-                loss.append(mse(self.forward(X), y))
+            if (i % 100 == 0):
+                os.system("clear")
+            #pred = self.optimise(X[i % 10], y[i % 10], lr)
+            pred = self.optimise(X, y, lr, i)
+            if (i % 100 == 0):
+                print(f"Epoch: {i}")
+                print(f"pred: {pred[0]}, y: {y[0]}, diff: {np.sqrt(mse(pred, y))}")
+            loss.append(mse(pred, y))
+            lr = max(lr * (lr_decay ** i), lr_min)
+            
         return loss
