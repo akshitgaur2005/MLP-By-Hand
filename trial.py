@@ -23,8 +23,8 @@ def cost(preds, y):
 class Dense():
 
     def __init__(self, in_feats, out_feats):
-        self.weights = np.random.random((in_feats, out_feats)) # So that dot product can happen - (samples x features) x (features x neurons in next layer) = (samples x neurons in next layer)
-        self.bias = np.random.random((1, out_feats))
+        self.weights = np.random.randn(in_feats, out_feats) # So that dot product can happen - (samples x features) x (features x neurons in next layer) = (samples x neurons in next layer)
+        self.bias = np.random.randn(1, out_feats)
         #self.layer = np.array([[1]])
         #self.bias = np.array([[0]])
 
@@ -54,14 +54,16 @@ class Model():
             input = relu(self.layers[i].forward(input))
             if opt:
                 outputs.append(input)
+        preds = self.layers[-1].forward(input)
         if opt:
+            outputs.append(preds)
             return outputs
-        return self.layers[-1].forward(input)
+        return preds
 
     def optimise(self, X, y, lr):
         preds = self.forward(X, opt=True)
         a_L = preds[-1]
-        da_i_1 = np.mean(a_L - y)
+        da_i_1 = (a_L - y) / y.shape[1]
         inputs = preds
 
         for i in range(len(self.layers)):
@@ -71,6 +73,7 @@ class Model():
             else:
                 a_i_1 = X
             da_i = da_i_1
+            #print(f"da_{i}: {da_i}")
             dw_i, db_i, da_i_1 = self.layers[j].backward(da_i, a_i_1)
             #print(f"dw_i: {dw_i}, db_i: {db_i}, da_i_1: {da_i_1}")
             self.layers[j].weights -= lr * dw_i
@@ -103,15 +106,16 @@ def working(n_iters=10):
         for j in range(500):
             model.optimise(data, labels, 0.01)
         loss2 = cost(model.forward(data), labels)
-        if loss1 > loss2:
-            wins.append(1)
-        else:
-            wins.append(0)
+        #if loss1 > loss2:
+        #    wins.append(1)
+        #else:
+        #    wins.append(0)
+        wins.append(loss2)
 
     wins = np.array(wins)
 
     print(wins)
-    percentage_win = wins.mean() * 100
+    percentage_win = wins.mean(dtype=np.float64)
     print(f"Working percentage: {percentage_win}%")
 
-working(1000)
+working(100)
