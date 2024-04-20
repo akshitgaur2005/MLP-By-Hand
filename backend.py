@@ -34,8 +34,8 @@ class Dense():
             Each output from previous layer is passed onto each neuron in the
             layer as input.
         """
-        self.weights = np.random.random((in_feats, out_feats))
-        self.bias  = np.random.random((1, out_feats))
+        self.weights = np.random.randn(in_feats, out_feats)
+        self.bias  = np.random.randn(1, out_feats)
 
     def forward(self, X):
         """
@@ -117,14 +117,15 @@ class Model():
             dw_i = clip(dw_i, clip_val)
             db_i = clip(db_i, clip_val)
             if (counter % 100 == 0):
+                print(f"Layer: {j} {self.layers[j].weights.shape}")
                 print(f"lr: {lr}, dw_{j}: {np.mean(dw_i)}, lr * dw_{j}: {lr * np.mean(dw_i)}, W: {np.mean(self.layers[j].weights)}, b: {np.mean(self.layers[j].bias)}")
-            ld = 0.01
+            ld = 0
             self.layers[j].weights -= lr * (dw_i + ld * self.layers[j].weights)
             self.layers[j].bias -= lr * db_i
 
         return a_L
 
-    def fit(self, X, y, epochs, lr, lr_decay, lr_min):
+    def fit(self, X, y, X_val, y_val, tolerance, epochs, lr, lr_decay, lr_min):
         """
         Fits the model to a dataset
         inputs are
@@ -133,7 +134,12 @@ class Model():
         returns
             array tracking loss across epochs
         """
-        loss = []
+        train_loss = []
+        val_loss = []
+        counter = 0
+        train_mean = np.mean(y)
+        val_mean = np.mean(y_val)
+        
         #track_var = np.round(epochs / 10)
         #X = np.array_split(X, 10)
         #y = np.array_split(y, 10)
@@ -142,10 +148,18 @@ class Model():
                 os.system("clear")
             #pred = self.optimise(X[i % 10], y[i % 10], lr)
             pred = self.optimise(X, y, lr, i)
+            train_loss.append(mse(pred, y))
+            val_loss.append(mse(self.forward(X_val), y_val))
             if (i % 100 == 0):
                 print(f"Epoch: {i}")
-                print(f"pred: {pred[0]}, y: {y[0]}, diff: {np.sqrt(mse(pred, y))}")
-            loss.append(mse(pred, y))
+                print(f"pred: {pred[0]}, y: {y[0]}, diff: {np.sqrt(mse(pred, y)) / train_mean * 100}%, Val Loss: {np.sqrt(val_loss[i]) / val_mean * 100}%")
+            if (i != 0):
+                if (val_loss[i] >= val_loss[i - 1]):
+                    counter += 1
+                else:
+                    counter = 0
+            if counter == tolerance:
+                break
             lr = max(lr * (lr_decay ** i), lr_min)
             
-        return loss
+        return train_loss, val_loss
